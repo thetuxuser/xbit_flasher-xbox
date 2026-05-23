@@ -41,8 +41,8 @@ target_link_libraries(xbit_flasher PRIVATE
 )
 
 target_compile_options(xbit_flasher PRIVATE
-    -Wall -Wextra -Wpedantic
-    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wall -Wextra -Wpedantic -Wno-unused-parameter>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
 )
 
 if(ENABLE_ASAN)
