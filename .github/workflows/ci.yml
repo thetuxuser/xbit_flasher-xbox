@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    branches: [master, main]
+  release:
+    types: [created]
+
+jobs:
+  # ── Linux build ─────────────────────────────────────────────────────────────
+  build-linux:
+    name: Linux (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            CC: gcc
+            CXX: g++
+          - compiler: clang
+            CC: clang
+            CXX: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libhidapi-dev libhidapi-hidraw0 libhidapi-libusb0 \
+            cmake ninja-build pkg-config \
+            ${{ matrix.compiler == 'clang' && 'clang' || 'gcc g++' }}
+
+      - name: Configure
+        env:
+          CC: ${{ matrix.CC }}
+          CXX: ${{ matrix.CXX }}
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xbit_flasher-linux-${{ matrix.compiler }}
+          path: build/xbit_flasher
+
+  # ── macOS build ─────────────────────────────────────────────────────────────
+  build-macos:
+    name: macOS
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install hidapi cmake ninja pkg-config
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xbit_flasher-macos
+          path: build/xbit_flasher
+
+  # ── Windows build ────────────────────────────────────────────────────────────
+  build-windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg dependencies
+        run: |
+          vcpkg install hidapi:x64-windows
+          vcpkg integrate install
+
+      - name: Configure
+        run: |
+          cmake -B build `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xbit_flasher-windows
+          path: build/Release/xbit_flasher.exe
+
+  # ── Linting ──────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (clang-format)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          find . \( -name '*.cpp' -o -name '*.c' -o -name '*.h' \) \
+            ! -path './build/*' \
+            -exec clang-format --dry-run --Werror {} +
+
+  # ── Release assets ───────────────────────────────────────────────────────────
+  release:
+    name: Attach release binaries
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package
+        run: |
+          cd artifacts
+          tar czf xbit_flasher-linux-gcc.tar.gz   xbit_flasher-linux-gcc/
+          tar czf xbit_flasher-linux-clang.tar.gz xbit_flasher-linux-clang/
+          tar czf xbit_flasher-macos.tar.gz       xbit_flasher-macos/
+          zip -r  xbit_flasher-windows.zip        xbit_flasher-windows/
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/xbit_flasher-linux-gcc.tar.gz
+            artifacts/xbit_flasher-linux-clang.tar.gz
+            artifacts/xbit_flasher-macos.tar.gz
+            artifacts/xbit_flasher-windows.zip
