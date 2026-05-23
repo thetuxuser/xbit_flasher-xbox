@@ -1,0 +1,28 @@
+# Build outputs
+build/
+*.o
+*.obj
+xbit_flasher
+xbit_flasher.exe
+xbit_hook.dll
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+_CPack_Packages/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Compile commands
+compile_commands.json
