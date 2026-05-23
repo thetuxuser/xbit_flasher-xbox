@@ -11,7 +11,7 @@
  */
 
 #ifdef _WIN32
-#  include <windows.h>
+#include <windows.h>
 #endif
 
 #include <cstdio>
@@ -22,7 +22,7 @@
 #include <vector>
 
 #ifndef _WIN32
-#  include <unistd.h>   /* usleep, sleep */
+#include <unistd.h> /* usleep, sleep */
 #endif
 
 #include "xbit.h"
@@ -52,21 +52,18 @@ static void dbg_print_bytes(const PREPORT_BUF buf, int length)
 		printf(" %02X", buf->report.u.buffer[i]);
 	printf("\n");
 }
-#  define DBG_BYTES(buf, len) dbg_print_bytes((buf), (len))
-#  define DBG(fmt, ...)       printf("[DBG] " fmt "\n", ##__VA_ARGS__)
+#define DBG_BYTES(buf, len) dbg_print_bytes((buf), (len))
+#define DBG(fmt, ...) printf("[DBG] " fmt "\n", ##__VA_ARGS__)
 #else
-#  define DBG_BYTES(buf, len) ((void)0)
-#  define DBG(fmt, ...)       ((void)0)
+#define DBG_BYTES(buf, len) ((void)0)
+#define DBG(fmt, ...) ((void)0)
 #endif
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * XbitFlasher — constructor / destructor
  * ═══════════════════════════════════════════════════════════════════════════*/
 
-XbitFlasher::XbitFlasher()
-	: memory_layout_id(0)
-	, handle(nullptr)
-	, device_initialized(false)
+XbitFlasher::XbitFlasher() : memory_layout_id(0), handle(nullptr), device_initialized(false)
 {
 	memset(&statusBuf, 0, sizeof(statusBuf));
 	hid_init();
@@ -88,19 +85,23 @@ bool XbitFlasher::OpenDevice()
 	wchar_t wstr[256];
 
 	handle = hid_open(ST_VENDOR_ID, ST_PRODUCT_ID, nullptr);
-	if (!handle) {
-		fprintf(stderr, "ERROR: Failed to open HID device (VID=%04X PID=%04X).\n"
-		                "       Is the X-BIT plugged in?  On Linux, check udev rules.\n",
+	if (!handle)
+	{
+		fprintf(stderr,
+		        "ERROR: Failed to open HID device (VID=%04X PID=%04X).\n"
+		        "       Is the X-BIT plugged in?  On Linux, check udev rules.\n",
 		        ST_VENDOR_ID, ST_PRODUCT_ID);
 		return false;
 	}
 
 	/* Validate manufacturer string */
 	if (hid_get_manufacturer_string(handle, wstr, 256) < 0 ||
-	    wcsncmp(wstr, DEVICE_MFG, wcslen(DEVICE_MFG)) != 0) {
-		fprintf(stderr, "ERROR: Unexpected manufacturer string: %ls\n"
-		                "       Expected: %ls\n"
-		                "       Try replugging the USB cable and retrying.\n",
+	    wcsncmp(wstr, DEVICE_MFG, wcslen(DEVICE_MFG)) != 0)
+	{
+		fprintf(stderr,
+		        "ERROR: Unexpected manufacturer string: %ls\n"
+		        "       Expected: %ls\n"
+		        "       Try replugging the USB cable and retrying.\n",
 		        wstr, DEVICE_MFG);
 		CloseDevice();
 		return false;
@@ -108,15 +109,18 @@ bool XbitFlasher::OpenDevice()
 
 	/* Validate product string */
 	if (hid_get_product_string(handle, wstr, 256) < 0 ||
-	    wcsncmp(wstr, DEVICE_PRODUCT, wcslen(DEVICE_PRODUCT)) != 0) {
-		fprintf(stderr, "ERROR: Unexpected product string: %ls\n"
-		                "       Expected: %ls\n",
+	    wcsncmp(wstr, DEVICE_PRODUCT, wcslen(DEVICE_PRODUCT)) != 0)
+	{
+		fprintf(stderr,
+		        "ERROR: Unexpected product string: %ls\n"
+		        "       Expected: %ls\n",
 		        wstr, DEVICE_PRODUCT);
 		CloseDevice();
 		return false;
 	}
 
-	if (!GetStatus()) {
+	if (!GetStatus())
+	{
 		fprintf(stderr, "ERROR: Failed to get initial status from modchip.\n"
 		                "       Try replugging the USB cable and retrying.\n");
 		CloseDevice();
@@ -131,7 +135,8 @@ bool XbitFlasher::OpenDevice()
 
 bool XbitFlasher::CloseDevice()
 {
-	if (handle) {
+	if (handle)
+	{
 		Reset();
 		hid_close(handle);
 		handle = nullptr;
@@ -151,8 +156,7 @@ bool XbitFlasher::IsDeviceInitialized() const
 
 bool XbitFlasher::IsValidStatus() const
 {
-	return (statusBuf.reportID == 0 &&
-	        statusBuf.report.u.status.cmd == CMD_GET_STATUS);
+	return (statusBuf.reportID == 0 && statusBuf.report.u.status.cmd == CMD_GET_STATUS);
 }
 
 uchar XbitFlasher::GetCurrentCommand() const
@@ -197,9 +201,7 @@ bool XbitFlasher::IsDeviceWriteProtected() const
 int XbitFlasher::InternalRead(PREPORT_BUF output)
 {
 	/* NOTE: Must use hid_get_feature_report, NOT hid_read */
-	int res = hid_get_feature_report(handle,
-	                                 (unsigned char *)output,
-	                                 sizeof(REPORT_BUF));
+	int res = hid_get_feature_report(handle, (unsigned char *)output, sizeof(REPORT_BUF));
 	if (res == (int)sizeof(REPORT_BUF))
 		DBG_BYTES(output, OUTPUT_REPORT_SIZE);
 	return res;
@@ -225,12 +227,14 @@ bool XbitFlasher::GetStatus()
 	memset(&buf, 0, sizeof(buf));
 	buf.report.u.cmd = CMD_GET_STATUS;
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_GET_STATUS.\n");
 		return false;
 	}
 	memset(&statusBuf, 0, sizeof(statusBuf));
-	if (InternalRead(&statusBuf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalRead(&statusBuf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to read CMD_GET_STATUS reply.\n");
 		return false;
 	}
@@ -243,7 +247,8 @@ bool XbitFlasher::Reset()
 	memset(&buf, 0, sizeof(buf));
 	buf.report.u.cmd = CMD_RESET;
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_RESET.\n");
 		return false;
 	}
@@ -255,26 +260,34 @@ bool XbitFlasher::SetVM(uchar vm)
 	REPORT_BUF buf;
 	memset(&buf, 0, sizeof(buf));
 	buf.report.u.setRegs.cmd = CMD_SET_VM;
-	buf.report.u.setRegs.vm  = vm;
+	buf.report.u.setRegs.vm = vm;
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_SET_VM.\n");
 		return false;
 	}
 	return true;
 }
 
-bool XbitFlasher::GetBus()   { return SetVM(1); }
-bool XbitFlasher::ReleaseBus() { return SetVM(0); }
+bool XbitFlasher::GetBus()
+{
+	return SetVM(1);
+}
+bool XbitFlasher::ReleaseBus()
+{
+	return SetVM(0);
+}
 
 bool XbitFlasher::SetPage(int layout_id)
 {
 	REPORT_BUF buf;
 	memset(&buf, 0, sizeof(buf));
-	buf.report.u.setRegs.cmd  = CMD_SET_PAGE;
+	buf.report.u.setRegs.cmd = CMD_SET_PAGE;
 	buf.report.u.setRegs.page = (uchar)(layout_id & 0xFF);
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_SET_PAGE.\n");
 		return false;
 	}
@@ -289,22 +302,23 @@ bool XbitFlasher::SetPage(int layout_id)
  *   - rw.address = byte offset within that sector (big-endian)
  * ───────────────────────────────────────────────────────────────────────────*/
 
-bool XbitFlasher::ReadFlash(uchar sector, uint16 offset,
-                             uchar *buffer, uint16 nBytes)
+bool XbitFlasher::ReadFlash(uchar sector, uint16 offset, uchar *buffer, uint16 nBytes)
 {
-	if (!nBytes) {
+	if (!nBytes)
+	{
 		fprintf(stderr, "ERROR: ReadFlash called with nBytes=0.\n");
 		return false;
 	}
 
 	REPORT_BUF buf;
 	memset(&buf, 0, sizeof(buf));
-	buf.report.u.cmd        = CMD_READ;
-	buf.report.u.rw.flash   = sector;
+	buf.report.u.cmd = CMD_READ;
+	buf.report.u.rw.flash = sector;
 	buf.report.u.rw.address = swap16(offset);
-	buf.report.u.rw.nBytes  = swap16(nBytes);
+	buf.report.u.rw.nBytes = swap16(nBytes);
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_READ.\n");
 		return false;
 	}
@@ -312,21 +326,23 @@ bool XbitFlasher::ReadFlash(uchar sector, uint16 offset,
 	time_t t_start = time(nullptr);
 
 	uint16 remaining = nBytes;
-	uint16 reported  = remaining;
-	while (remaining) {
-		if (InternalRead(&buf) != (int)sizeof(REPORT_BUF)) {
+	uint16 reported = remaining;
+	while (remaining)
+	{
+		if (InternalRead(&buf) != (int)sizeof(REPORT_BUF))
+		{
 			fprintf(stderr, "ERROR: Failed to read CMD_READ reply.\n");
 			return false;
 		}
 		/* buffer[0] is the command echo byte — skip it */
-		uint16 chunk = (remaining < (uint16)(CMD_SIZE - 1))
-		               ? remaining : (uint16)(CMD_SIZE - 1);
+		uint16 chunk = (remaining < (uint16)(CMD_SIZE - 1)) ? remaining : (uint16)(CMD_SIZE - 1);
 		memcpy(buffer, buf.report.u.buffer + 1, chunk);
-		buffer    += chunk;
+		buffer += chunk;
 		remaining -= chunk;
 
 		/* Progress: print on every 100-byte boundary */
-		if ((reported / 100) != (remaining / 100)) {
+		if ((reported / 100) != (remaining / 100))
+		{
 			printf("  Reading: %5u bytes remaining...\n", remaining);
 			reported = remaining;
 		}
@@ -337,10 +353,10 @@ bool XbitFlasher::ReadFlash(uchar sector, uint16 offset,
 	return true;
 }
 
-bool XbitFlasher::WriteFlash(uchar sector, uint16 offset,
-                              const uchar *buffer, uint16 nBytes)
+bool XbitFlasher::WriteFlash(uchar sector, uint16 offset, const uchar *buffer, uint16 nBytes)
 {
-	if (!nBytes) {
+	if (!nBytes)
+	{
 		fprintf(stderr, "ERROR: WriteFlash called with nBytes=0.\n");
 		return false;
 	}
@@ -352,34 +368,37 @@ bool XbitFlasher::WriteFlash(uchar sector, uint16 offset,
 
 	REPORT_BUF buf;
 	memset(&buf, 0, sizeof(buf));
-	buf.report.u.cmd        = CMD_WRITE;
-	buf.report.u.rw.flash   = sector;
+	buf.report.u.cmd = CMD_WRITE;
+	buf.report.u.rw.flash = sector;
 	buf.report.u.rw.address = swap16(offset);
-	buf.report.u.rw.nBytes  = swap16(nBytes);
+	buf.report.u.rw.nBytes = swap16(nBytes);
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_WRITE.\n");
 		return false;
 	}
-	sleep_ms(2);  /* extra delay before streaming data */
+	sleep_ms(2); /* extra delay before streaming data */
 
 	uint16 remaining = nBytes;
-	uint16 reported  = remaining;
-	while (remaining) {
-		uint16 chunk = (remaining < (uint16)(CMD_SIZE - 1))
-		               ? remaining : (uint16)(CMD_SIZE - 1);
+	uint16 reported = remaining;
+	while (remaining)
+	{
+		uint16 chunk = (remaining < (uint16)(CMD_SIZE - 1)) ? remaining : (uint16)(CMD_SIZE - 1);
 
 		memset(&buf, 0, sizeof(buf));
 		memcpy(buf.report.u.buffer + 1, buffer, chunk);
 
-		if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+		if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+		{
 			fprintf(stderr, "ERROR: Failed to send write data chunk.\n");
 			return false;
 		}
-		buffer    += chunk;
+		buffer += chunk;
 		remaining -= chunk;
 
-		if ((reported / 100) != (remaining / 100)) {
+		if ((reported / 100) != (remaining / 100))
+		{
 			printf("  Writing: %5u bytes remaining...\n", remaining);
 			reported = remaining;
 		}
@@ -390,8 +409,10 @@ bool XbitFlasher::WriteFlash(uchar sector, uint16 offset,
 	 * NOTE: Some X-BIT firmware revisions do not echo back the checksum,
 	 * so a mismatch is logged as a warning rather than a hard error.
 	 */
-	if (GetStatus()) {
-		if (statusBuf.report.u.status.checkSum != checksum) {
+	if (GetStatus())
+	{
+		if (statusBuf.report.u.status.checkSum != checksum)
+		{
 			printf("  WARNING: Checksum mismatch (got 0x%02X, expected 0x%02X).\n"
 			       "           This may be a known firmware limitation — verify after write.\n",
 			       statusBuf.report.u.status.checkSum, checksum);
@@ -405,11 +426,12 @@ bool XbitFlasher::EraseBlock(int sector)
 {
 	REPORT_BUF buf;
 	memset(&buf, 0, sizeof(buf));
-	buf.report.u.erase.cmd     = CMD_ERASE;
-	buf.report.u.erase.flash   = (uchar)sector;
-	buf.report.u.erase.address = 0;  /* always 0 for XBIT */
+	buf.report.u.erase.cmd = CMD_ERASE;
+	buf.report.u.erase.flash = (uchar)sector;
+	buf.report.u.erase.address = 0; /* always 0 for XBIT */
 
-	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF)) {
+	if (InternalWrite(&buf) != (int)sizeof(REPORT_BUF))
+	{
 		fprintf(stderr, "ERROR: Failed to send CMD_ERASE (sector %d).\n", sector);
 		return false;
 	}
@@ -422,8 +444,7 @@ bool XbitFlasher::EraseBlock(int sector)
 
 int XbitFlasher::GetSizeForBank(int layout, int bank) const
 {
-	if (layout < 1 || layout > BANK_LAYOUT_COUNT ||
-	    bank   < 1 || bank   > BANKS_MAX)
+	if (layout < 1 || layout > BANK_LAYOUT_COUNT || bank < 1 || bank > BANKS_MAX)
 		return 0;
 	return BANK_LAYOUT[layout - 1][bank - 1] * 1024;
 }
@@ -433,9 +454,10 @@ int XbitFlasher::GetBlockCountForBank(int layout, int bank) const
 	int size = GetSizeForBank(layout, bank);
 	if (size == 0)
 		return 0;
-	if (size % BLOCK_SIZE != 0) {
-		fprintf(stderr, "ERROR: Bank size %d is not a multiple of block size %d.\n",
-		        size, BLOCK_SIZE);
+	if (size % BLOCK_SIZE != 0)
+	{
+		fprintf(stderr, "ERROR: Bank size %d is not a multiple of block size %d.\n", size,
+		        BLOCK_SIZE);
 		return -1;
 	}
 	return size / BLOCK_SIZE;
@@ -446,7 +468,8 @@ int XbitFlasher::GetStartBlockForBank(int layout, int bank) const
 	int offset = 0;
 	for (int b = 1; b < bank; ++b)
 		offset += GetSizeForBank(layout, b);
-	if (offset % BLOCK_SIZE != 0) {
+	if (offset % BLOCK_SIZE != 0)
+	{
 		fprintf(stderr, "ERROR: Bank start offset %d is not block-aligned.\n", offset);
 		return -1;
 	}
@@ -459,7 +482,8 @@ int XbitFlasher::GetStartBlockForBank(int layout, int bank) const
 
 bool XbitFlasher::EraseBank(int bank)
 {
-	if (IsDeviceWriteProtected()) {
+	if (IsDeviceWriteProtected())
+	{
 		fprintf(stderr, "ERROR: Modchip is write-protected.\n"
 		                "       Replug the USB cable and try again.\n");
 		return false;
@@ -467,29 +491,33 @@ bool XbitFlasher::EraseBank(int bank)
 
 	int start_block = GetStartBlockForBank(memory_layout_id, bank);
 	int block_count = GetBlockCountForBank(memory_layout_id, bank);
-	if (start_block < 0 || block_count <= 0) {
-		fprintf(stderr, "ERROR: Invalid bank %d for layout %d.\n",
-		        bank, memory_layout_id);
+	if (start_block < 0 || block_count <= 0)
+	{
+		fprintf(stderr, "ERROR: Invalid bank %d for layout %d.\n", bank, memory_layout_id);
 		return false;
 	}
 
-	if (!GetBus()) {
+	if (!GetBus())
+	{
 		fprintf(stderr, "ERROR: Failed to acquire bus before erasing bank %d.\n", bank);
 		return false;
 	}
 
-	printf("Erasing bank %d (%d block(s) starting at block %d)...\n",
-	       bank, block_count, start_block);
+	printf("Erasing bank %d (%d block(s) starting at block %d)...\n", bank, block_count,
+	       start_block);
 
-	for (int b = start_block; b < start_block + block_count; ++b) {
+	for (int b = start_block; b < start_block + block_count; ++b)
+	{
 		printf("  Erasing block %d...\n", b);
-		if (!EraseBlock(b)) {
+		if (!EraseBlock(b))
+		{
 			ReleaseBus();
 			return false;
 		}
 	}
 
-	if (!ReleaseBus()) {
+	if (!ReleaseBus())
+	{
 		fprintf(stderr, "WARNING: Failed to release bus after erasing bank %d.\n", bank);
 	}
 	return true;
@@ -497,40 +525,47 @@ bool XbitFlasher::EraseBank(int bank)
 
 bool XbitFlasher::Format(int layout)
 {
-	if (layout < 1 || layout > BANK_LAYOUT_COUNT) {
-		fprintf(stderr, "ERROR: Invalid layout %d. Valid range: 1-%d.\n",
-		        layout, BANK_LAYOUT_COUNT);
+	if (layout < 1 || layout > BANK_LAYOUT_COUNT)
+	{
+		fprintf(stderr, "ERROR: Invalid layout %d. Valid range: 1-%d.\n", layout,
+		        BANK_LAYOUT_COUNT);
 		return false;
 	}
 
-	if (IsDeviceWriteProtected()) {
+	if (IsDeviceWriteProtected())
+	{
 		fprintf(stderr, "ERROR: Modchip is write-protected.\n"
 		                "       Replug the USB cable and try again.\n");
 		return false;
 	}
 
-	if (!GetBus()) {
+	if (!GetBus())
+	{
 		fprintf(stderr, "ERROR: Failed to acquire bus before formatting.\n");
 		return false;
 	}
 
 	printf("Formatting: erasing all %d blocks...\n", TOTAL_BLOCKS);
-	for (int i = 0; i < TOTAL_BLOCKS; ++i) {
+	for (int i = 0; i < TOTAL_BLOCKS; ++i)
+	{
 		printf("  Erasing block %d / %d...\n", i + 1, TOTAL_BLOCKS);
-		if (!EraseBlock(i)) {
+		if (!EraseBlock(i))
+		{
 			ReleaseBus();
 			return false;
 		}
 	}
 
-	if (!SetPage(layout)) {
+	if (!SetPage(layout))
+	{
 		fprintf(stderr, "ERROR: Failed to set memory layout %d.\n", layout);
 		ReleaseBus();
 		return false;
 	}
 	memory_layout_id = layout;
 
-	if (!ReleaseBus()) {
+	if (!ReleaseBus())
+	{
 		fprintf(stderr, "WARNING: Failed to release bus after format.\n");
 	}
 
@@ -540,16 +575,17 @@ bool XbitFlasher::Format(int layout)
 
 bool XbitFlasher::FlashBank(int bank, const uchar *input_data, int data_length)
 {
-	int bank_size   = GetSizeForBank(memory_layout_id, bank);
+	int bank_size = GetSizeForBank(memory_layout_id, bank);
 	int start_block = GetStartBlockForBank(memory_layout_id, bank);
 	int block_count = GetBlockCountForBank(memory_layout_id, bank);
 
-	if (bank_size == 0) {
-		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n",
-		        bank, memory_layout_id);
+	if (bank_size == 0)
+	{
+		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n", bank, memory_layout_id);
 		return false;
 	}
-	if (data_length != bank_size) {
+	if (data_length != bank_size)
+	{
 		fprintf(stderr, "ERROR: File size %d bytes does not match bank %d size %d bytes.\n",
 		        data_length, bank, bank_size);
 		return false;
@@ -557,7 +593,8 @@ bool XbitFlasher::FlashBank(int bank, const uchar *input_data, int data_length)
 	if (start_block < 0 || block_count <= 0)
 		return false;
 
-	if (IsDeviceWriteProtected()) {
+	if (IsDeviceWriteProtected())
+	{
 		fprintf(stderr, "ERROR: Modchip is write-protected.\n"
 		                "       Replug the USB cable and try again.\n");
 		return false;
@@ -573,40 +610,45 @@ bool XbitFlasher::FlashBank(int bank, const uchar *input_data, int data_length)
 
 	/* Write */
 	printf("Step 2/2: Writing bank %d...\n", bank);
-	if (!GetBus()) {
+	if (!GetBus())
+	{
 		fprintf(stderr, "ERROR: Failed to acquire bus before writing bank %d.\n", bank);
 		return false;
 	}
 
-	static const int SECTORS_PER_BLOCK = BLOCK_SIZE / 0x8000;  /* = 2 */
-	static const int SECTOR_SIZE       = 0x8000;                /* 32 KB */
+	static const int SECTORS_PER_BLOCK = BLOCK_SIZE / 0x8000; /* = 2 */
+	static const int SECTOR_SIZE = 0x8000;                    /* 32 KB */
 	static const int MAX_WRITE_RETRIES = 10;
 
-	for (int blk = 0; blk < block_count; ++blk) {
-		for (int sec = 0; sec < SECTORS_PER_BLOCK; ++sec) {
-			int    file_offset = blk * BLOCK_SIZE + sec * SECTOR_SIZE;
-			uchar  abs_sector  = (uchar)(start_block + blk);
-			uint16 sec_offset  = (uint16)(sec * SECTOR_SIZE);
+	for (int blk = 0; blk < block_count; ++blk)
+	{
+		for (int sec = 0; sec < SECTORS_PER_BLOCK; ++sec)
+		{
+			int file_offset = blk * BLOCK_SIZE + sec * SECTOR_SIZE;
+			uchar abs_sector = (uchar)(start_block + blk);
+			uint16 sec_offset = (uint16)(sec * SECTOR_SIZE);
 
-			printf("  Block %d, sector %d (file offset 0x%06X)...\n",
-			       start_block + blk, sec, file_offset);
+			printf("  Block %d, sector %d (file offset 0x%06X)...\n", start_block + blk, sec,
+			       file_offset);
 
 			bool ok = false;
-			for (int attempt = 1; attempt <= MAX_WRITE_RETRIES; ++attempt) {
-				if (WriteFlash(abs_sector, sec_offset,
-				               &input_data[file_offset],
-				               (uint16)SECTOR_SIZE)) {
+			for (int attempt = 1; attempt <= MAX_WRITE_RETRIES; ++attempt)
+			{
+				if (WriteFlash(abs_sector, sec_offset, &input_data[file_offset],
+				               (uint16)SECTOR_SIZE))
+				{
 					ok = true;
 					if (attempt > 1)
 						printf("    Write succeeded on attempt %d.\n", attempt);
 					break;
 				}
-				fprintf(stderr, "    Write attempt %d/%d failed — retrying...\n",
-				        attempt, MAX_WRITE_RETRIES);
+				fprintf(stderr, "    Write attempt %d/%d failed — retrying...\n", attempt,
+				        MAX_WRITE_RETRIES);
 				sleep_ms(100);
 			}
 
-			if (!ok) {
+			if (!ok)
+			{
 				fprintf(stderr, "ERROR: Sector write failed after %d attempts. Aborting.\n",
 				        MAX_WRITE_RETRIES);
 				ReleaseBus();
@@ -615,7 +657,8 @@ bool XbitFlasher::FlashBank(int bank, const uchar *input_data, int data_length)
 		}
 	}
 
-	if (!ReleaseBus()) {
+	if (!ReleaseBus())
+	{
 		fprintf(stderr, "WARNING: Failed to release bus after writing bank %d.\n", bank);
 	}
 
@@ -625,45 +668,48 @@ bool XbitFlasher::FlashBank(int bank, const uchar *input_data, int data_length)
 
 bool XbitFlasher::ReadBank(int bank, uchar *output_data, int *num_bytes_read)
 {
-	int bank_size   = GetSizeForBank(memory_layout_id, bank);
+	int bank_size = GetSizeForBank(memory_layout_id, bank);
 	int start_block = GetStartBlockForBank(memory_layout_id, bank);
 	int block_count = GetBlockCountForBank(memory_layout_id, bank);
 
-	if (bank_size == 0) {
-		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n",
-		        bank, memory_layout_id);
+	if (bank_size == 0)
+	{
+		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n", bank, memory_layout_id);
 		return false;
 	}
 	if (start_block < 0 || block_count <= 0)
 		return false;
 
-	if (IsDeviceWriteProtected()) {
+	if (IsDeviceWriteProtected())
+	{
 		fprintf(stderr, "ERROR: Modchip is write-protected.\n"
 		                "       Replug the USB cable and try again.\n");
 		return false;
 	}
 
-	if (!GetBus()) {
+	if (!GetBus())
+	{
 		fprintf(stderr, "ERROR: Failed to acquire bus before reading bank %d.\n", bank);
 		return false;
 	}
 
 	static const int SECTORS_PER_BLOCK = BLOCK_SIZE / 0x8000;
-	static const int SECTOR_SIZE       = 0x8000;
+	static const int SECTOR_SIZE = 0x8000;
 
 	*num_bytes_read = 0;
-	for (int blk = 0; blk < block_count; ++blk) {
+	for (int blk = 0; blk < block_count; ++blk)
+	{
 		printf("  Reading block %d...\n", start_block + blk);
-		for (int sec = 0; sec < SECTORS_PER_BLOCK; ++sec) {
-			int    file_offset = blk * BLOCK_SIZE + sec * SECTOR_SIZE;
-			uchar  abs_sector  = (uchar)(start_block + blk);
-			uint16 sec_offset  = (uint16)(sec * SECTOR_SIZE);
+		for (int sec = 0; sec < SECTORS_PER_BLOCK; ++sec)
+		{
+			int file_offset = blk * BLOCK_SIZE + sec * SECTOR_SIZE;
+			uchar abs_sector = (uchar)(start_block + blk);
+			uint16 sec_offset = (uint16)(sec * SECTOR_SIZE);
 
-			if (!ReadFlash(abs_sector, sec_offset,
-			               &output_data[file_offset],
-			               (uint16)SECTOR_SIZE)) {
-				fprintf(stderr, "ERROR: Read failed at block %d sector %d.\n",
-				        start_block + blk, sec);
+			if (!ReadFlash(abs_sector, sec_offset, &output_data[file_offset], (uint16)SECTOR_SIZE))
+			{
+				fprintf(stderr, "ERROR: Read failed at block %d sector %d.\n", start_block + blk,
+				        sec);
 				ReleaseBus();
 				return false;
 			}
@@ -671,7 +717,8 @@ bool XbitFlasher::ReadBank(int bank, uchar *output_data, int *num_bytes_read)
 		}
 	}
 
-	if (!ReleaseBus()) {
+	if (!ReleaseBus())
+	{
 		fprintf(stderr, "WARNING: Failed to release bus after reading bank %d.\n", bank);
 	}
 	return true;
@@ -680,12 +727,13 @@ bool XbitFlasher::ReadBank(int bank, uchar *output_data, int *num_bytes_read)
 bool XbitFlasher::VerifyBank(int bank, const uchar *input_data, int data_length)
 {
 	int bank_size = GetSizeForBank(memory_layout_id, bank);
-	if (bank_size == 0) {
-		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n",
-		        bank, memory_layout_id);
+	if (bank_size == 0)
+	{
+		fprintf(stderr, "ERROR: Bank %d does not exist in layout %d.\n", bank, memory_layout_id);
 		return false;
 	}
-	if (data_length != bank_size) {
+	if (data_length != bank_size)
+	{
 		fprintf(stderr, "ERROR: File size %d bytes does not match bank %d size %d bytes.\n",
 		        data_length, bank, bank_size);
 		return false;
@@ -699,13 +747,15 @@ bool XbitFlasher::VerifyBank(int bank, const uchar *input_data, int data_length)
 	if (!ReadBank(bank, read_buf.data(), &bytes_read))
 		return false;
 
-	if (bytes_read != bank_size) {
-		fprintf(stderr, "ERROR: Only read %d of %d bytes from bank %d.\n",
-		        bytes_read, bank_size, bank);
+	if (bytes_read != bank_size)
+	{
+		fprintf(stderr, "ERROR: Only read %d of %d bytes from bank %d.\n", bytes_read, bank_size,
+		        bank);
 		return false;
 	}
 
-	if (memcmp(read_buf.data(), input_data, (size_t)data_length) != 0) {
+	if (memcmp(read_buf.data(), input_data, (size_t)data_length) != 0)
+	{
 		fprintf(stderr, "ERROR: Verification FAILED — data mismatch in bank %d.\n", bank);
 		return false;
 	}
@@ -725,9 +775,11 @@ void XbitFlasher::PrintMemoryBankLayout() const
 	for (int b = 1; b <= BANKS_MAX; ++b)
 		printf("  Bank%-4d", b);
 	printf("\n");
-	for (int lay = 1; lay <= BANK_LAYOUT_COUNT; ++lay) {
+	for (int lay = 1; lay <= BANK_LAYOUT_COUNT; ++lay)
+	{
 		printf("  %-10d", lay);
-		for (int b = 1; b <= BANKS_MAX; ++b) {
+		for (int b = 1; b <= BANKS_MAX; ++b)
+		{
 			int sz = GetSizeForBank(lay, b);
 			if (sz)
 				printf("  %-8d", sz / 1024);
@@ -742,12 +794,11 @@ void XbitFlasher::PrintBankSelection() const
 {
 	printf("DIP switch positions (ON=1, OFF=0):\n");
 	printf("  %-8s  SW1   SW2   SW3\n", "Bank");
-	for (int i = 0; i < BANKS_MAX; ++i) {
+	for (int i = 0; i < BANKS_MAX; ++i)
+	{
 		int mask = BIOS_SELECT_SWITCHES[i];
-		printf("  %-8d  %-5s %-5s %-5s\n", i + 1,
-		       (mask & 1) ? "ON"  : "OFF",
-		       (mask & 2) ? "ON"  : "OFF",
-		       (mask & 4) ? "ON"  : "OFF");
+		printf("  %-8d  %-5s %-5s %-5s\n", i + 1, (mask & 1) ? "ON" : "OFF",
+		       (mask & 2) ? "ON" : "OFF", (mask & 4) ? "ON" : "OFF");
 	}
 }
 
@@ -755,7 +806,7 @@ void XbitFlasher::PrintUsage(const char *argv0) const
 {
 	printf("X-BIT Modchip Flasher\n\n");
 	printf("Usage:\n");
-	printf("  %s r <layout> <bank> <file>   Read bank to file\n",  argv0);
+	printf("  %s r <layout> <bank> <file>   Read bank to file\n", argv0);
 	printf("  %s w <layout> <bank> <file>   Write file to bank\n", argv0);
 	printf("  %s v <layout> <bank> <file>   Verify bank against file\n", argv0);
 	printf("  %s f <layout>                 Format chip with layout\n\n", argv0);
@@ -777,7 +828,8 @@ void XbitFlasher::PrintUsage(const char *argv0) const
 static bool load_file(const char *path, std::vector<uchar> &data)
 {
 	FILE *f = fopen(path, "rb");
-	if (!f) {
+	if (!f)
+	{
 		fprintf(stderr, "ERROR: Cannot open '%s' for reading.\n", path);
 		return false;
 	}
@@ -786,26 +838,29 @@ static bool load_file(const char *path, std::vector<uchar> &data)
 	long sz = ftell(f);
 	rewind(f);
 
-	if (sz <= 0) {
+	if (sz <= 0)
+	{
 		fprintf(stderr, "ERROR: File '%s' is empty or unreadable.\n", path);
 		fclose(f);
 		return false;
 	}
-	if (sz > MAX_BIOS_SIZE) {
-		fprintf(stderr, "ERROR: File '%s' is %ld bytes — exceeds 2 MB maximum.\n",
-		        path, sz);
+	if (sz > MAX_BIOS_SIZE)
+	{
+		fprintf(stderr, "ERROR: File '%s' is %ld bytes — exceeds 2 MB maximum.\n", path, sz);
 		fclose(f);
 		return false;
 	}
-	if (sz % BLOCK_SIZE != 0) {
-		fprintf(stderr, "ERROR: File size %ld is not a multiple of block size %d.\n",
-		        sz, BLOCK_SIZE);
+	if (sz % BLOCK_SIZE != 0)
+	{
+		fprintf(stderr, "ERROR: File size %ld is not a multiple of block size %d.\n", sz,
+		        BLOCK_SIZE);
 		fclose(f);
 		return false;
 	}
 
 	data.resize((size_t)sz);
-	if (fread(data.data(), 1, (size_t)sz, f) != (size_t)sz) {
+	if (fread(data.data(), 1, (size_t)sz, f) != (size_t)sz)
+	{
 		fprintf(stderr, "ERROR: Short read from '%s'.\n", path);
 		fclose(f);
 		return false;
@@ -819,12 +874,14 @@ static bool load_file(const char *path, std::vector<uchar> &data)
 static bool save_file(const char *path, const uchar *data, int size)
 {
 	FILE *f = fopen(path, "wb");
-	if (!f) {
+	if (!f)
+	{
 		fprintf(stderr, "ERROR: Cannot open '%s' for writing.\n", path);
 		return false;
 	}
 
-	if (fwrite(data, 1, (size_t)size, f) != (size_t)size) {
+	if (fwrite(data, 1, (size_t)size, f) != (size_t)size)
+	{
 		fprintf(stderr, "ERROR: Short write to '%s'.\n", path);
 		fclose(f);
 		return false;
@@ -841,7 +898,8 @@ static bool save_file(const char *path, const uchar *data, int size)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2) {
+	if (argc < 2)
+	{
 		XbitFlasher().PrintUsage(argv[0]);
 		return 1;
 	}
@@ -850,35 +908,38 @@ int main(int argc, char *argv[])
 
 	/* Validate argument counts early */
 	bool needs_bank_file = (mode == 'r' || mode == 'w' || mode == 'v');
-	if (mode == 'f' && argc < 3) {
+	if (mode == 'f' && argc < 3)
+	{
 		fprintf(stderr, "ERROR: Format mode requires a layout argument.\n\n");
 		XbitFlasher().PrintUsage(argv[0]);
 		return 1;
 	}
-	if (needs_bank_file && argc < 5) {
+	if (needs_bank_file && argc < 5)
+	{
 		fprintf(stderr, "ERROR: Modes r/w/v require: layout bank file.\n\n");
 		XbitFlasher().PrintUsage(argv[0]);
 		return 1;
 	}
 
 	/* Parse layout */
-	char *endp  = nullptr;
-	int   layout = (int)strtol(argv[2], &endp, 10);
-	if (!*argv[2] || (endp && *endp) ||
-	    layout < 1 || layout > BANK_LAYOUT_COUNT) {
-		fprintf(stderr, "ERROR: Invalid layout '%s'. Valid range: 1–%d.\n",
-		        argv[2], BANK_LAYOUT_COUNT);
+	char *endp = nullptr;
+	int layout = (int)strtol(argv[2], &endp, 10);
+	if (!*argv[2] || (endp && *endp) || layout < 1 || layout > BANK_LAYOUT_COUNT)
+	{
+		fprintf(stderr, "ERROR: Invalid layout '%s'. Valid range: 1–%d.\n", argv[2],
+		        BANK_LAYOUT_COUNT);
 		return 1;
 	}
 
 	/* Parse bank (optional) */
-	int         bank     = 0;
+	int bank = 0;
 	const char *filename = nullptr;
-	if (needs_bank_file) {
+	if (needs_bank_file)
+	{
 		bank = (int)strtol(argv[3], &endp, 10);
-		if (!*argv[3] || (endp && *endp) || bank < 1 || bank > BANKS_MAX) {
-			fprintf(stderr, "ERROR: Invalid bank '%s'. Valid range: 1–%d.\n",
-			        argv[3], BANKS_MAX);
+		if (!*argv[3] || (endp && *endp) || bank < 1 || bank > BANKS_MAX)
+		{
+			fprintf(stderr, "ERROR: Invalid bank '%s'. Valid range: 1–%d.\n", argv[3], BANKS_MAX);
 			return 1;
 		}
 		filename = argv[4];
@@ -891,13 +952,15 @@ int main(int argc, char *argv[])
 
 	/* Open device */
 	XbitFlasher flasher;
-	if (!flasher.OpenDevice()) {
+	if (!flasher.OpenDevice())
+	{
 		fprintf(stderr, "ERROR: Could not connect to X-BIT modchip.\n");
 		return 2;
 	}
 
 	/* Layout consistency check for r/w/v */
-	if (needs_bank_file && flasher.memory_layout_id != layout) {
+	if (needs_bank_file && flasher.memory_layout_id != layout)
+	{
 		fprintf(stderr,
 		        "ERROR: Layout mismatch — chip reports layout %d, you specified %d.\n"
 		        "       Either specify the correct layout or format the chip first.\n"
@@ -908,26 +971,30 @@ int main(int argc, char *argv[])
 
 	/* Load BIOS data for modes that need it */
 	std::vector<uchar> bios_data;
-	if (mode == 'w' || mode == 'v') {
+	if (mode == 'w' || mode == 'v')
+	{
 		if (!load_file(filename, bios_data))
 			return 4;
 	}
 
 	/* Execute operation */
 	int ret = 0;
-	switch (mode) {
-		case 'r': {
+	switch (mode)
+	{
+		case 'r':
+		{
 			int bank_size = flasher.GetSizeForBank(layout, bank);
-			if (bank_size <= 0) {
-				fprintf(stderr, "ERROR: Bank %d has no size in layout %d.\n",
-				        bank, layout);
+			if (bank_size <= 0)
+			{
+				fprintf(stderr, "ERROR: Bank %d has no size in layout %d.\n", bank, layout);
 				ret = 5;
 				break;
 			}
 			std::vector<uchar> read_buf((size_t)bank_size);
 			int bytes_read = 0;
 			printf("Reading bank %d to '%s'...\n", bank, filename);
-			if (!flasher.ReadBank(bank, read_buf.data(), &bytes_read)) {
+			if (!flasher.ReadBank(bank, read_buf.data(), &bytes_read))
+			{
 				fprintf(stderr, "ERROR: Read failed.\n");
 				ret = 5;
 				break;
@@ -938,7 +1005,8 @@ int main(int argc, char *argv[])
 		}
 		case 'w':
 			printf("Writing '%s' to bank %d...\n", filename, bank);
-			if (!flasher.FlashBank(bank, bios_data.data(), (int)bios_data.size())) {
+			if (!flasher.FlashBank(bank, bios_data.data(), (int)bios_data.size()))
+			{
 				fprintf(stderr, "ERROR: Write failed.\n");
 				ret = 5;
 			}
@@ -946,7 +1014,8 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			printf("Verifying bank %d against '%s'...\n", bank, filename);
-			if (!flasher.VerifyBank(bank, bios_data.data(), (int)bios_data.size())) {
+			if (!flasher.VerifyBank(bank, bios_data.data(), (int)bios_data.size()))
+			{
 				/* VerifyBank already printed the error */
 				ret = 5;
 			}
@@ -954,7 +1023,8 @@ int main(int argc, char *argv[])
 
 		case 'f':
 			printf("Formatting chip with layout %d...\n", layout);
-			if (!flasher.Format(layout)) {
+			if (!flasher.Format(layout))
+			{
 				fprintf(stderr, "ERROR: Format failed.\n");
 				ret = 5;
 			}

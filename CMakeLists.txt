@@ -15,16 +15,16 @@ option(ENABLE_ASAN   "Enable AddressSanitizer"          OFF)
 option(ENABLE_UBSAN  "Enable UndefinedBehaviorSanitizer" OFF)
 
 # ── Dependencies ─────────────────────────────────────────────────────────────
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(HIDAPI REQUIRED hidapi-hidraw hidapi-libusb)
-
-# Prefer hidraw on Linux, libusb elsewhere
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
     pkg_check_modules(HIDAPI REQUIRED hidapi-hidraw)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    find_package(PkgConfig REQUIRED)
     pkg_check_modules(HIDAPI REQUIRED hidapi)
 else()
-    pkg_check_modules(HIDAPI REQUIRED hidapi)
+    # Windows (vcpkg)
+    find_package(hidapi CONFIG REQUIRED)
+    set(HIDAPI_LIBRARIES hidapi::hidapi)
 endif()
 
 # ── Main executable ───────────────────────────────────────────────────────────

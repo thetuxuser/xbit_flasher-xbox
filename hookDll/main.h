@@ -8,18 +8,17 @@
  */
 
 #ifdef BUILD_DLL
-    #define DLL_EXPORT __declspec(dllexport)
+#define DLL_EXPORT __declspec(dllexport)
 #else
-    #define DLL_EXPORT __declspec(dllimport)
+#define DLL_EXPORT __declspec(dllimport)
 #endif
-
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-void DLL_EXPORT SomeFunction(const LPCSTR sometext);
+	void DLL_EXPORT SomeFunction(const LPCSTR sometext);
 
 #ifdef __cplusplus
 }
