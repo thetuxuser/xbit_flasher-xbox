@@ -15,33 +15,34 @@ option(ENABLE_ASAN   "Enable AddressSanitizer"          OFF)
 option(ENABLE_UBSAN  "Enable UndefinedBehaviorSanitizer" OFF)
 
 # ── Dependencies ─────────────────────────────────────────────────────────────
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(HIDAPI REQUIRED hidapi-hidraw hidapi-libusb)
-
-# Prefer hidraw on Linux, libusb elsewhere
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    pkg_check_modules(HIDAPI REQUIRED hidapi-hidraw)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(HIDAPI REQUIRED IMPORTED_TARGET hidapi-hidraw)
+    set(HIDAPI_TARGET PkgConfig::HIDAPI)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    pkg_check_modules(HIDAPI REQUIRED hidapi)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(HIDAPI REQUIRED IMPORTED_TARGET hidapi)
+    set(HIDAPI_TARGET PkgConfig::HIDAPI)
 else()
-    pkg_check_modules(HIDAPI REQUIRED hidapi)
+    # Windows (vcpkg)
+    find_package(hidapi CONFIG REQUIRED)
+    set(HIDAPI_TARGET hidapi::hidapi)
 endif()
 
 # ── Main executable ───────────────────────────────────────────────────────────
 add_executable(xbit_flasher main.cpp)
 
 target_include_directories(xbit_flasher PRIVATE
-    ${HIDAPI_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}
 )
 
 target_link_libraries(xbit_flasher PRIVATE
-    ${HIDAPI_LIBRARIES}
+    ${HIDAPI_TARGET}
 )
 
 target_compile_options(xbit_flasher PRIVATE
-    -Wall -Wextra -Wpedantic
-    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wall -Wextra -Wpedantic -Wno-unused-parameter>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
 )
 
 if(ENABLE_ASAN)
@@ -86,6 +87,6 @@ message(STATUS "")
 message(STATUS "xbit_flasher ${PROJECT_VERSION}")
 message(STATUS "  Platform   : ${CMAKE_SYSTEM_NAME}")
 message(STATUS "  Build type : ${CMAKE_BUILD_TYPE}")
-message(STATUS "  HIDAPI     : ${HIDAPI_LIBRARIES}")
+message(STATUS "  HIDAPI     : ${HIDAPI_TARGET}")
 message(STATUS "  HookDll    : ${BUILD_HOOKDLL}")
 message(STATUS "")

@@ -8,9 +8,10 @@
 #define XBIT_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
-#include "hidapi/hidapi.h"
+#include <hidapi.h>
 #ifdef __cplusplus
 }
 #endif
@@ -18,43 +19,43 @@ extern "C" {
 #include <stdint.h>
 
 /* ── HID commands ───────────────────────────────────────────────────────────*/
-#define CMD_RESET       0x01
-#define CMD_ERASE       0x02
-#define CMD_WRITE       0x03
-#define CMD_READ        0x04
-#define CMD_GET_STATUS  0x05
-#define CMD_SET_REGS    0x06  /* Unused? */
-#define CMD_SET_PAGE    0x07
-#define CMD_SET_VM      0x08
+#define CMD_RESET 0x01
+#define CMD_ERASE 0x02
+#define CMD_WRITE 0x03
+#define CMD_READ 0x04
+#define CMD_GET_STATUS 0x05
+#define CMD_SET_REGS 0x06 /* Unused? */
+#define CMD_SET_PAGE 0x07
+#define CMD_SET_VM 0x08
 
 /* ── Flash selectors ────────────────────────────────────────────────────────*/
-#define PRIMARY_FLASH   0
+#define PRIMARY_FLASH 0
 #define SECONDARY_FLASH 1
 
 /* ── Report sizes ───────────────────────────────────────────────────────────*/
-#define OUTPUT_REPORT_SIZE  64
+#define OUTPUT_REPORT_SIZE 64
 #define FEATURE_REPORT_SIZE OUTPUT_REPORT_SIZE
-#define CMD_SIZE            OUTPUT_REPORT_SIZE
+#define CMD_SIZE OUTPUT_REPORT_SIZE
 
 /* ── Status flags (VM register) ─────────────────────────────────────────────*/
-#define STATUS_BUS_FREE      0x01
-#define STATUS_BUS_ATTACHED  0x02
+#define STATUS_BUS_FREE 0x01
+#define STATUS_BUS_ATTACHED 0x02
 #define STATUS_WRITE_PROTECT 0x80
 
 /* ── Flash geometry ─────────────────────────────────────────────────────────*/
-#define TOTAL_BLOCKS    0x20        /* 32 blocks */
-#define BLOCK_SIZE      0x10000     /* 64 KB per block */
-#define MAX_BIOS_SIZE   (2 * 1024 * 1024)  /* 2 MB */
+#define TOTAL_BLOCKS 0x20               /* 32 blocks */
+#define BLOCK_SIZE 0x10000              /* 64 KB per block */
+#define MAX_BIOS_SIZE (2 * 1024 * 1024) /* 2 MB */
 
 /* ── USB device identity ────────────────────────────────────────────────────*/
-#define ST_VENDOR_ID    0x0483
-#define ST_PRODUCT_ID   0x0000
-#define DEVICE_MFG      L"ST Microelectronics"
-#define DEVICE_PRODUCT  L"DK3200 Evaluation Board"
+#define ST_VENDOR_ID 0x0483
+#define ST_PRODUCT_ID 0x0000
+#define DEVICE_MFG L"ST Microelectronics"
+#define DEVICE_PRODUCT L"DK3200 Evaluation Board"
 
 /* ── Bank layout table ──────────────────────────────────────────────────────*/
 #define BANK_LAYOUT_COUNT 6
-#define BANKS_MAX         6
+#define BANKS_MAX 6
 
 /*
  * Bank sizes in KiB, indexed [layout-1][bank-1].
@@ -69,12 +70,8 @@ extern "C" {
  *   6    2048      —       —       —       —       —
  */
 static const int BANK_LAYOUT[BANK_LAYOUT_COUNT][BANKS_MAX] = {
-	{512,  512,  256, 256, 256, 256},
-	{1024, 256,  256, 256, 256,   0},
-	{1024, 512,  256, 256,   0,   0},
-	{1024, 512,  512,   0,   0,   0},
-	{1024, 1024,   0,   0,   0,   0},
-	{2048,    0,   0,   0,   0,   0},
+    {512, 512, 256, 256, 256, 256}, {1024, 256, 256, 256, 256, 0}, {1024, 512, 256, 256, 0, 0},
+    {1024, 512, 512, 0, 0, 0},      {1024, 1024, 0, 0, 0, 0},      {2048, 0, 0, 0, 0, 0},
 };
 
 /*
@@ -82,62 +79,69 @@ static const int BANK_LAYOUT[BANK_LAYOUT_COUNT][BANKS_MAX] = {
  * Bit 0 = switch 1, bit 1 = switch 2, bit 2 = switch 3.
  */
 static const uint8_t BIOS_SELECT_SWITCHES[BANKS_MAX] = {
-	0x00,  /* Bank 1 — OFF OFF OFF */
-	0x01,  /* Bank 2 — ON  OFF OFF */
-	0x02,  /* Bank 3 — OFF ON  OFF */
-	0x03,  /* Bank 4 — ON  ON  OFF */
-	0x04,  /* Bank 5 — OFF OFF ON  */
-	0x05,  /* Bank 6 — ON  OFF ON  */
+    0x00, /* Bank 1 — OFF OFF OFF */
+    0x01, /* Bank 2 — ON  OFF OFF */
+    0x02, /* Bank 3 — OFF ON  OFF */
+    0x03, /* Bank 4 — ON  ON  OFF */
+    0x04, /* Bank 5 — OFF OFF ON  */
+    0x05, /* Bank 6 — ON  OFF ON  */
 };
 
 /* ── Type aliases ───────────────────────────────────────────────────────────*/
-typedef uint8_t  uchar;
-typedef uint8_t  uint8;
+typedef uint8_t uchar;
+typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
 
 /* ── HID report structures ──────────────────────────────────────────────────*/
 #pragma pack(push, 1)
 
-typedef struct {
-	union {
+typedef struct
+{
+	union
+	{
 		uchar cmd;
 
-		struct {
-			uchar  cmd;      /* CMD_ERASE */
-			uchar  flash;    /* PRIMARY_FLASH or SECONDARY_FLASH */
-			uint16 address;  /* Any address in any sector */
+		struct
+		{
+			uchar cmd;      /* CMD_ERASE */
+			uchar flash;    /* PRIMARY_FLASH or SECONDARY_FLASH */
+			uint16 address; /* Any address in any sector */
 		} erase;
 
-		struct {
-			uchar  cmd;      /* CMD_READ or CMD_WRITE */
-			uchar  flash;    /* Sector number (XBIT uses this field for sector) */
-			uint16 address;  /* Byte offset within sector (big-endian) */
-			uint16 nBytes;   /* Byte count (big-endian) */
+		struct
+		{
+			uchar cmd;      /* CMD_READ or CMD_WRITE */
+			uchar flash;    /* Sector number (XBIT uses this field for sector) */
+			uint16 address; /* Byte offset within sector (big-endian) */
+			uint16 nBytes;  /* Byte count (big-endian) */
 		} rw;
 
-		struct {
-			uchar cmd;   /* CMD_SET_PAGE or CMD_SET_VM */
-			uchar page;  /* Desired page register value */
-			uchar vm;    /* Desired VM register value */
+		struct
+		{
+			uchar cmd;  /* CMD_SET_PAGE or CMD_SET_VM */
+			uchar page; /* Desired page register value */
+			uchar vm;   /* Desired VM register value */
 		} setRegs;
 
-		struct {
-			uchar cmd;         /* CMD_GET_STATUS */
-			uchar currentCmd;  /* Command currently being processed */
-			uchar page;        /* Page register (encodes memory layout) */
-			uchar vm;          /* VM register (encodes bus/wp state) */
-			uchar ret;         /* Return value from flash routine */
-			uchar checkSum;    /* Checksum for write commands */
+		struct
+		{
+			uchar cmd;        /* CMD_GET_STATUS */
+			uchar currentCmd; /* Command currently being processed */
+			uchar page;       /* Page register (encodes memory layout) */
+			uchar vm;         /* VM register (encodes bus/wp state) */
+			uchar ret;        /* Return value from flash routine */
+			uchar checkSum;   /* Checksum for write commands */
 		} status;
 
 		uchar buffer[CMD_SIZE];
 	} u;
 } MCU_CMD, *PMCU_CMD;
 
-typedef struct {
-	unsigned char reportID;  /* Must be 0; Windows HID driver prefix byte */
-	MCU_CMD       report;
+typedef struct
+{
+	unsigned char reportID; /* Must be 0; Windows HID driver prefix byte */
+	MCU_CMD report;
 } REPORT_BUF, *PREPORT_BUF;
 
 #pragma pack(pop)
@@ -145,7 +149,7 @@ typedef struct {
 /* ── XbitFlasher class ──────────────────────────────────────────────────────*/
 class XbitFlasher
 {
-public:
+  public:
 	int memory_layout_id;
 
 	XbitFlasher();
@@ -164,25 +168,30 @@ public:
 	void PrintBankSelection() const;
 	void PrintUsage(const char *argv0) const;
 
-private:
+	/* Layout helpers */
+	int GetStartBlockForBank(int layout, int bank) const;
+	int GetBlockCountForBank(int layout, int bank) const;
+	int GetSizeForBank(int layout, int bank) const;
+
+  private:
 	hid_device *handle;
-	bool        device_initialized;
-	REPORT_BUF  statusBuf;
+	bool device_initialized;
+	REPORT_BUF statusBuf;
 
 	/* Device state queries */
-	bool  IsDeviceInitialized() const;
-	bool  IsValidStatus() const;
+	bool IsDeviceInitialized() const;
+	bool IsValidStatus() const;
 	uchar GetCurrentCommand() const;
 	uchar GetMemoryLayout() const;
 	uchar GetVMState() const;
-	bool  IsDeviceReady() const;
-	bool  IsDeviceBusFree() const;
-	bool  IsDeviceBusAttached() const;
-	bool  IsDeviceWriteProtected() const;
+	bool IsDeviceReady() const;
+	bool IsDeviceBusFree() const;
+	bool IsDeviceBusAttached() const;
+	bool IsDeviceWriteProtected() const;
 
 	/* Low-level HID I/O */
-	int  InternalRead(PREPORT_BUF output);
-	int  InternalWrite(PREPORT_BUF input);
+	int InternalRead(PREPORT_BUF output);
+	int InternalWrite(PREPORT_BUF input);
 
 	/* Protocol commands */
 	bool GetStatus();
@@ -194,11 +203,6 @@ private:
 	bool ReadFlash(uchar sector, uint16 offset, uchar *buffer, uint16 nBytes);
 	bool WriteFlash(uchar sector, uint16 offset, const uchar *buffer, uint16 nBytes);
 	bool EraseBlock(int sector);
-
-	/* Layout helpers */
-	int  GetStartBlockForBank(int layout, int bank) const;
-	int  GetBlockCountForBank(int layout, int bank) const;
-	int  GetSizeForBank(int layout, int bank) const;
 };
 
 #endif /* XBIT_H */
