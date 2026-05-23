@@ -11,7 +11,7 @@
 extern "C"
 {
 #endif
-#include "hidapi/hidapi.h"
+#include <hidapi.h>
 #ifdef __cplusplus
 }
 #endif
