@@ -1,0 +1,16 @@
+# /etc/udev/rules.d/99-xbit-flasher.rules
+#
+# Allow members of the 'plugdev' group to access the X-BIT modchip
+# without running xbit_flasher as root.
+#
+# Install:
+#   sudo cp 99-xbit-flasher.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo usermod -aG plugdev $USER   # log out + back in
+
+# ST Microelectronics DK3200 Evaluation Board (X-BIT modchip)
+SUBSYSTEM=="usb",    ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0000", \
+    GROUP="plugdev", MODE="0664", TAG+="uaccess"
+
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="0000", \
+    GROUP="plugdev", MODE="0664", TAG+="uaccess"
